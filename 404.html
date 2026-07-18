@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>playnext</title>
+    <!--
+      GitHub Pages serves this file for any path it doesn't recognize
+      (e.g. /some-cafe/admin). We re-encode the real path into a query
+      string and redirect to index.html, which decodes it back via the
+      inline script there. This is what makes clean URLs + React Router's
+      BrowserRouter work on GitHub Pages.
+      See: https://github.com/rafgraph/spa-github-pages
+    -->
+    <script>
+      var segmentCount = 0 // top-level static host, no repo subpath needed
+      var l = window.location
+      l.replace(
+        l.protocol +
+          '//' +
+          l.hostname +
+          (l.port ? ':' + l.port : '') +
+          l.pathname
+            .split('/')
+            .slice(0, 1 + segmentCount)
+            .join('/') +
+          '/?/' +
+          l.pathname.slice(1).replace(/&/g, '~and~') +
+          (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+          l.hash
+      )
+    </script>
+  </head>
+  <body></body>
+</html>
