@@ -37,6 +37,8 @@ export default function VenuePage() {
   const [code, setCode] = useState('')
   const [codeError, setCodeError] = useState(null)
   const [verifying, setVerifying] = useState(false)
+  const [entryReady, setEntryReady] = useState(false)
+  const [networkBlocked, setNetworkBlocked] = useState(false)
 
   const [venue, setVenue] = useState(null)
   const [playerActive, setPlayerActive] = useState(false)
@@ -76,6 +78,34 @@ export default function VenuePage() {
     }
   }
 
+  useEffect(() => {
+    let cancelled = false
+    async function checkEntryRules() {
+      try {
+        const res = await fetch(`${API_BASE}/venues/${venueSlug}`)
+        if (!res.ok) throw new Error('Venue not found')
+        const venueData = await res.json()
+        if (cancelled) return
+        setVenue(venueData)
+        const blocked = venueData.settings.sameNetworkRequired && !venueData.accessAllowed
+        setNetworkBlocked(blocked)
+        if (blocked) {
+          sessionStorage.removeItem(`playnext_verified_${venueSlug}`)
+          setVerified(false)
+        } else if (venueData.settings.dailyCodeRequired === false) {
+          sessionStorage.setItem(`playnext_verified_${venueSlug}`, 'true')
+          setVerified(true)
+        }
+      } catch (err) {
+        if (!cancelled) setCodeError(err.message)
+      } finally {
+        if (!cancelled) setEntryReady(true)
+      }
+    }
+    checkEntryRules()
+    return () => { cancelled = true }
+  }, [venueSlug])
+
   const loadData = useCallback(async () => {
     try {
       const [venueRes, playbackRes] = await Promise.all([
@@ -87,6 +117,7 @@ export default function VenuePage() {
       const venueData = await venueRes.json()
       const playbackData = await playbackRes.json()
       setVenue(venueData)
+      setNetworkBlocked(venueData.settings.sameNetworkRequired && !venueData.accessAllowed)
       setPlayerActive(playbackData?.active === true)
       setNowPlaying(playbackData.nowPlaying)
       setQueue(playbackData.upNext)
@@ -150,6 +181,21 @@ export default function VenuePage() {
 
   // ---- Code gate ----
   if (!verified) {
+    if (!entryReady) {
+      return <div className="venue-shell"><div className="loading-text">Checking venue access…</div></div>
+    }
+    if (networkBlocked) {
+      return (
+        <div className="venue-shell">
+          <div className="gate-wrap">
+            <div className="gate-card">
+              <h1>{venue?.name || venueSlug}</h1>
+              <p>Connect to the venue Wi-Fi to join this queue.</p>
+            </div>
+          </div>
+        </div>
+      )
+    }
     return (
       <div className="venue-shell">
         <div className="gate-wrap">

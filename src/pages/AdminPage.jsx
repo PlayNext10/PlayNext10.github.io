@@ -183,6 +183,22 @@ export default function AdminPage() {
     if (res.ok || res.status === 204) setPending((items) => items.filter((item) => item.id !== itemId))
   }
 
+  async function resetQueue() {
+    if (queue.length === 0 || !window.confirm('Remove every song waiting in the queue? The current song will keep playing.')) return
+    const res = await authedFetch('/queue', { method: 'DELETE' })
+    if (!res.ok) return showToast('Could not reset the queue.')
+    setQueue([])
+    showToast('Queue cleared.')
+  }
+
+  async function resetPending() {
+    if (pending.length === 0 || !window.confirm('Remove every request waiting for approval?')) return
+    const res = await authedFetch('/pending', { method: 'DELETE' })
+    if (!res.ok) return showToast('Could not reset pending requests.')
+    setPending([])
+    showToast('Pending requests cleared.')
+  }
+
   async function moveQueueItem(itemId, direction) {
     const res = await authedFetch(`/queue/${itemId}/move`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ direction }),
@@ -254,14 +270,17 @@ export default function AdminPage() {
   async function toggleSetting(key) {
     if (!venue) return
     const newValue = !venue.settings[key]
-    setVenue((v) => ({ ...v, settings: { ...v.settings, [key]: newValue } }))
+    const changes = { [key]: newValue }
+    if (key === 'sameNetworkRequired' && newValue) changes.dailyCodeRequired = false
+    const previousSettings = venue.settings
+    setVenue((v) => ({ ...v, settings: { ...v.settings, ...changes } }))
     const res = await authedFetch('/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ [key]: newValue }),
+      body: JSON.stringify(changes),
     })
     if (!res.ok) {
-      setVenue((v) => ({ ...v, settings: { ...v.settings, [key]: !newValue } }))
+      setVenue((v) => ({ ...v, settings: previousSettings }))
       showToast('Could not update that setting — try again.')
     }
   }
@@ -403,7 +422,7 @@ export default function AdminPage() {
               </section>
 
               <section className="admin-card">
-                <h3>Queue</h3>
+                <div className="card-title-row"><h3>Queue</h3><button className="secondary-btn list-reset" onClick={resetQueue} disabled={queue.length === 0}>Reset queue</button></div>
                 <p>Remove requests before they play.</p>
 
                 <form className="admin-add-song" onSubmit={addAdminSong}>
@@ -437,7 +456,7 @@ export default function AdminPage() {
 
               {venue.settings.manualApproval && (
                 <section className="admin-card pending-card--left">
-                  <h3>Pending approval</h3>
+                  <div className="card-title-row"><h3>Pending approval</h3><button className="secondary-btn list-reset" onClick={resetPending} disabled={pending.length === 0}>Reset list</button></div>
                   <p>These requests are hidden from guests until approved.</p>
                   <div className="admin-queue">
                     {pending.length === 0 && <div className="empty-queue">No pending requests.</div>}
@@ -506,6 +525,29 @@ export default function AdminPage() {
                     />
                   </div>
 
+                  <div className="setting-row">
+                    <div>
+                      <strong>Require daily code</strong>
+                      <span>{venue.settings.sameNetworkRequired ? 'Disabled while venue Wi-Fi access is required.' : 'Guests enter the daily code before joining.'}</span>
+                    </div>
+                    <button
+                      className={`toggle ${venue.settings.dailyCodeRequired ? 'on' : ''}`}
+                      onClick={() => toggleSetting('dailyCodeRequired')}
+                      disabled={venue.settings.sameNetworkRequired}
+                    />
+                  </div>
+
+                  <div className="setting-row">
+                    <div>
+                      <strong>Require venue Wi-Fi</strong>
+                      <span>Guests must share the active player’s public internet connection. This turns off the daily code.</span>
+                    </div>
+                    <button
+                      className={`toggle ${venue.settings.sameNetworkRequired ? 'on' : ''}`}
+                      onClick={() => toggleSetting('sameNetworkRequired')}
+                    />
+                  </div>
+
                   {!venue.settings.onePerGuest && (
                     <div className="setting-row">
                       <div>
@@ -547,7 +589,7 @@ export default function AdminPage() {
 
               {venue.settings.manualApproval && (
                 <section className="admin-card pending-card">
-                  <h3>Pending approval</h3>
+                  <div className="card-title-row"><h3>Pending approval</h3><button className="secondary-btn list-reset" onClick={resetPending} disabled={pending.length === 0}>Reset list</button></div>
                   <p>These requests are hidden from guests until approved.</p>
                   <div className="admin-queue">
                     {pending.length === 0 && <div className="empty-queue">No pending requests.</div>}
