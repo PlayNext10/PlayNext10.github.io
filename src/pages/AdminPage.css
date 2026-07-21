@@ -218,15 +218,15 @@
 }
 
 .card-title-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
   gap: 12px;
-  margin-bottom: 4px;
+  margin-bottom: 14px;
 }
 
 .card-title-row h3 { margin-bottom: 0; }
-.list-reset { padding: 7px 11px; font-size: 12px; }
+.list-reset { padding: 7px 11px; font-size: 12px; white-space: nowrap; }
 
 .admin-card > p {
   display: none;
@@ -813,6 +813,8 @@
   .settings-trigger { margin-left: auto; }
   .admin-main { padding: 14px 14px 60px; }
   .admin-card { padding: 18px; border-radius: 21px; }
+  .card-title-row { grid-template-columns: 1fr; gap: 8px; }
+  .list-reset { justify-self: start; }
 }
 
 /* Typography refinement */

@@ -189,8 +189,8 @@ export default function VenuePage() {
         <div className="venue-shell">
           <div className="gate-wrap">
             <div className="gate-card">
-              <h1>{venue?.name || venueSlug}</h1>
-              <p>Connect to the venue Wi-Fi to join this queue.</p>
+              <h1>Wi-Fi required</h1>
+              <p>This queue is only available while connected to {venue?.name || 'the shop'}’s Wi-Fi. Connect to the shop network, then refresh this page.</p>
             </div>
           </div>
         </div>
